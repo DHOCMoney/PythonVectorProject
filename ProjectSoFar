@@ -1,0 +1,116 @@
+from tkinter import *
+trace = 0
+
+
+class CanvasEvent:
+    def __init__(self, parent=None):
+        toolbar = Frame(bg='yellow')
+        toolbar.pack(side='top', fill='y')
+        x = 'rectangle', 'oval', 'line', 'polygon'
+
+        self.shapeVar = StringVar(value=x)
+    
+
+        for shape in ('rectangle', 'oval', 'line', 'polygon'):
+            button = Radiobutton(toolbar, text=shape, value=shape,
+                                 indicatoron=False, variable=self.shapeVar)
+            button.pack(side='left')
+
+        canvas = Canvas(width=1200, height=1200, bg='yellow')
+        canvas.pack()
+
+        canvas.bind('<ButtonPress-1>', self.on_start)
+        canvas.bind('<B1-Motion>', self.on_grow)
+        canvas.bind('<Double-1>', self.on_clear)
+        self.canvas = canvas
+        self.drawn = None
+        self.kinds = {
+            'oval': self.create_oval_tagged,
+            'rectangle': self.create_rectangle_tagged,
+            'line': self.create_line_tagged,
+            'polygon': self.create_polygon_tagged
+        }
+        shape_name = self.shapeVar.get()
+        self.shape = self.kinds[shape_name]
+
+        self.drag_data = {"x": 0, "y": 0, "item": None}
+
+        self.canvas.tag_bind("ovals", "<ButtonPress-3>", self.on_item_press)
+        self.canvas.tag_bind("ovals", "<ButtonRelease-3>", self.on_item_release)
+        self.canvas.tag_bind("ovals", "<B3-Motion>", self.on_item_motion)
+
+        self.canvas.tag_bind("rectangles", "<ButtonPress-3>", self.on_item_press)
+        self.canvas.tag_bind("rectangles", "<ButtonRelease-3>", self.on_item_release)
+        self.canvas.tag_bind("rectangles", "<B3-Motion>", self.on_item_motion)
+
+        self.canvas.tag_bind("lines", "<ButtonPress-3>", self.on_item_press)
+        self.canvas.tag_bind("lines", "<ButtonRelease-3>", self.on_item_release)
+        self.canvas.tag_bind("lines", "<B3-Motion>", self.on_item_motion)
+
+        self.canvas.tag_bind("polygons", "<ButtonPress-3>", self.on_item_press)
+        self.canvas.tag_bind("polygons", "<ButtonRelease-3>", self.on_item_release)
+        self.canvas.tag_bind("polygons", "<B3-Motion>", self.on_item_motion)
+
+    def on_item_press(self, event):
+        self.drag_data["item"] = self.canvas.find_closest(event.x, event.y)[0]
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+
+    def on_item_release(self, event):
+        self.drag_data["item"] = None
+        self.drag_data["x"] = 0
+        self.drag_data["y"] = 0
+
+    def on_item_motion(self, event):
+        delta_x = event.x - self.drag_data["x"]
+        delta_y = event.y - self.drag_data["y"]
+        self.canvas.move(self.drag_data["item"], delta_x, delta_y)
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+
+    def on_start(self, event):
+        self.start = event
+        self.drawn = None
+
+    def on_grow(self, event):
+        canvas = event.widget
+        if self.drawn: canvas.delete(self.drawn)
+        objectId = self.shape(self.start.x, self.start.y, event.x, event.y)
+        if trace: print(objectId)
+        self.drawn = objectId
+
+    def on_clear(self, event):
+        event.widget.delete('all')
+
+
+class Move(CanvasEvent):
+    def __init__(self, parent=None):
+        CanvasEvent.__init__(self, parent)
+        self.canvas.create_text(110, 50, text='Left click and drag to create a  shape')
+        self.canvas.create_text(110, 85, text='Right click and drag a shape to Move it')
+        self.canvas.create_text(110, 120, text='Double click to erase canvas')
+
+        self.kinds = self.create_oval_tagged, self.create_rectangle_tagged, self.create_line_tagged, self.create_polygon_tagged
+
+    def create_oval_tagged(self, x1, y1, x2, y2):
+        object_id = self.canvas.create_oval(x1, y1, x2, y2)
+        self.canvas.itemconfig(object_id, tag='ovals', fill='blue')
+        return object_id
+
+    def create_rectangle_tagged(self, x1, y1, x2, y2):
+        object_id = self.canvas.create_rectangle(x1, y1, x2, y2)
+        self.canvas.itemconfig(object_id, tag='rectangles', fill='red')
+        return object_id
+
+    def create_line_tagged(self, x1, y1, x2, y2):
+        object_id = self.canvas.create_line(x1, y1, x2, y2)
+        self.canvas.itemconfig(object_id, tag='lines', fill='black', arrow="last", width=5)
+        return object_id
+
+    def create_polygon_tagged(self, x1, y1, x2, y2):
+        object_id = self.canvas.create_polygon(x1, y1, x2, y2)
+        self.canvas.itemconfig(object_id, tag='polygons', fill='black')
+        return object_id
+
+Move()
+mainloop()
