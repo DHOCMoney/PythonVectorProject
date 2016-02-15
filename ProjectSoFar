@@ -6,9 +6,9 @@ class CanvasEvent:
     def __init__(self, parent=None):
         toolbar = Frame(bg='yellow')
         toolbar.pack(side='top', fill='y')
-        x = 'rectangle', 'oval', 'line', 'polygon'
+    
 
-        self.shapeVar = StringVar(value=x)
+        self.shapeVar = StringVar(value='rectangle')
     
 
         for shape in ('rectangle', 'oval', 'line', 'polygon'):
